@@ -1,13 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import BookCard from "./components/BookCard";
+
+interface Book {
+  title: string;
+  author: string;
+  description?: string;
+  coverImage?: string | null;
+  publishedYear?: string;
+}
 
 export default function Home() {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [recommendations, setRecommendations] = useState([]);
+  const [recommendations, setRecommendations] = useState<Book[]>([]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,13 +24,36 @@ export default function Home() {
       setError("Please enter a book title");
       return;
     }
+    
     setError("");
     setLoading(true);
-    // API call will be implemented in later steps
-    setTimeout(() => {
-      setLoading(false);
+    
+    try {
+      // Call the API route
+      const params = new URLSearchParams({ title });
+      if (author.trim()) {
+        params.append('author', author);
+      }
+      
+      const response = await fetch(`/api/books/search?${params.toString()}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch books');
+      }
+      
+      setRecommendations(data.results || []);
+      
+      if (data.results.length === 0) {
+        setError("No books found. Try a different search.");
+      }
+    } catch (err) {
+      console.error('Search error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to search for books');
       setRecommendations([]);
-    }, 1000);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -148,10 +180,19 @@ export default function Home() {
         {recommendations.length > 0 && (
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl font-bold text-gray-900 mb-8">
-              Recommended For You
+              Recommended Books
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Book cards will be displayed here */}
+              {recommendations.map((book, index) => (
+                <BookCard
+                  key={`${book.title}-${index}`}
+                  title={book.title}
+                  author={book.author}
+                  description={book.description}
+                  coverImage={book.coverImage || undefined}
+                  publishedYear={book.publishedYear}
+                />
+              ))}
             </div>
           </div>
         )}
