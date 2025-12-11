@@ -41,9 +41,12 @@ async function fetchBookDescription(key: string): Promise<string> {
   return '';
 }
 
+// Filter terms to exclude study guides and non-book materials
+const EXCLUDE_TERMS = ['study guide', 'companion', 'analysis', 'summary', 'cliff notes', 'sparknotes', 'workbook'];
+
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
+    const { searchParams } = new URL(request.url);
     const title = searchParams.get('title');
     const author = searchParams.get('author');
 
@@ -62,7 +65,7 @@ export async function GET(request: NextRequest) {
       query += ` author:${author}`;
     }
 
-    const searchUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=1`;
+    const searchUrl = `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=5`;
     const response = await fetch(searchUrl);
     
     if (!response.ok) {
@@ -79,7 +82,21 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const originalBook = data.docs[0];
+    // Filter out study guides, companions, and other non-book materials
+    const validBooks = data.docs.filter((book: OpenLibraryBook) => {
+      const title = (book.title || '').toLowerCase();
+      return !EXCLUDE_TERMS.some(term => title.includes(term));
+    });
+
+    if (validBooks.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'Book not found',
+        results: [],
+      });
+    }
+
+    const originalBook = validBooks[0];
     console.log(`✅ Found: "${originalBook.title}"`);
 
     // Step 2: Fetch the original book's description
@@ -123,16 +140,37 @@ export async function GET(request: NextRequest) {
 
     const searchResults = await Promise.all(searchPromises);
     
-    // Combine and deduplicate results by key
+    // Combine and deduplicate results by key, filtering out study guides
     const seenKeys = new Set<string>();
     const allBooks = searchResults.flat().filter(book => {
       if (!book.key || seenKeys.has(book.key)) return false;
+      const title = (book.title || '').toLowerCase();
+      if (EXCLUDE_TERMS.some(term => title.includes(term))) return false;
       seenKeys.add(book.key);
       return true;
     });
     
-    const similarData = { docs: allBooks };
-    console.log(`✅ Found ${similarData.docs?.length || 0} potential matches`);
+    // Get diverse time periods - sample from different eras
+    const currentYear = new Date().getFullYear();
+    const categorizedBooks = {
+      recent: allBooks.filter(b => b.first_publish_year && b.first_publish_year >= currentYear - 10),
+      modern: allBooks.filter(b => b.first_publish_year && b.first_publish_year >= 1990 && b.first_publish_year < currentYear - 10),
+      classic: allBooks.filter(b => b.first_publish_year && b.first_publish_year >= 1950 && b.first_publish_year < 1990),
+      vintage: allBooks.filter(b => b.first_publish_year && b.first_publish_year < 1950),
+      unknown: allBooks.filter(b => !b.first_publish_year)
+    };
+
+    // Sample from each category to ensure diversity
+    const diverseBooks = [
+      ...categorizedBooks.recent.slice(0, 10),
+      ...categorizedBooks.modern.slice(0, 10),
+      ...categorizedBooks.classic.slice(0, 5),
+      ...categorizedBooks.vintage.slice(0, 3),
+      ...categorizedBooks.unknown.slice(0, 2)
+    ];
+    
+    const similarData = { docs: diverseBooks };
+    console.log(`✅ Found ${similarData.docs?.length || 0} potential matches (recent: ${categorizedBooks.recent.length}, modern: ${categorizedBooks.modern.length}, classic: ${categorizedBooks.classic.length})`);
 
     // Step 5 & 6: Vectorize and compare
     console.log('\n🧮 Step 5 & 6: Generating vectors and comparing...');
@@ -141,7 +179,6 @@ export async function GET(request: NextRequest) {
     const similarBooksWithScores: BookWithSimilarity[] = await Promise.all(
       (similarData.docs || [])
         .filter((book: OpenLibraryBook) => book.key !== originalBook.key) // Exclude the original book
-        .slice(0, 30) // Check more books for better matches
         .map(async (book: OpenLibraryBook) => {
           const description = await fetchBookDescription(book.key || '');
           const vector = generateSimpleEmbedding(description || 'No description');
