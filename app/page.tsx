@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import BookCard from "./components/BookCard";
 
 interface Book {
@@ -9,6 +10,7 @@ interface Book {
   description?: string;
   coverImage?: string | null;
   publishedYear?: string;
+  explanation?: string;
 }
 
 export default function Home() {
@@ -66,9 +68,8 @@ export default function Home() {
               BookMatch
             </div>
             <div className="hidden md:flex items-center gap-8">
-              <a href="#" className="text-gray-700 hover:text-gray-900 font-medium transition">Home</a>
-              <a href="#" className="text-gray-700 hover:text-gray-900 font-medium transition">About</a>
-              <a href="#" className="text-gray-700 hover:text-gray-900 font-medium transition">How It Works</a>
+              <Link href="/" className="text-gray-700 hover:text-gray-900 font-medium transition">Home</Link>
+              <Link href="/how-it-works" className="text-gray-700 hover:text-gray-900 font-medium transition">How It Works</Link>
               <button className="bg-gradient-to-r from-indigo-400 to-cyan-400 text-white px-6 py-2 rounded-full font-medium hover:shadow-lg transition">
                 Get Started
               </button>
@@ -87,7 +88,7 @@ export default function Home() {
               Love to Read
             </span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed">
+          <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-12 leading-relaxed">
             Tell us about a book you love, and our AI-powered engine will find your next favorite read.
             <br />
             Personalized recommendations, instantly.
@@ -191,6 +192,7 @@ export default function Home() {
                   description={book.description}
                   coverImage={book.coverImage || undefined}
                   publishedYear={book.publishedYear}
+                  explanation={book.explanation}
                 />
               ))}
             </div>

@@ -6,6 +6,7 @@ interface BookCardProps {
   description?: string;
   coverImage?: string;
   publishedYear?: string;
+  explanation?: string;
 }
 
 export default function BookCard({
@@ -14,6 +15,7 @@ export default function BookCard({
   description,
   coverImage,
   publishedYear,
+  explanation,
 }: BookCardProps) {
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group">
@@ -52,6 +54,15 @@ export default function BookCard({
           <p className="text-sm text-gray-700 line-clamp-3 leading-relaxed">
             {description}
           </p>
+        )}
+
+        {explanation && (
+          <div className="mt-4 p-3 bg-gradient-to-r from-indigo-50 to-cyan-50 rounded-lg border border-indigo-100">
+            <p className="text-xs font-semibold text-indigo-600 mb-1">Why this matches:</p>
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {explanation}
+            </p>
+          </div>
         )}
 
         <button className="w-full mt-4 bg-linear-to-r from-indigo-400 to-cyan-400 hover:from-indigo-500 hover:to-cyan-500 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg">

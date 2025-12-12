@@ -37,20 +37,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #9333ea;
+  background: #22d3ee;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #7e22ce;
-}
-
-@media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-thumb {
-    background: #a855f7;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: #9333ea;
-  }
+  background: #06b6d4;
 }
